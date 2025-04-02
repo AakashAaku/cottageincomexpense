@@ -1,0 +1,221 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      Role     @default(RECEPTION)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  RECEPTION
+}
+
+// Room Types
+model RoomType {
+  id          String   @id @default(cuid())
+  name        String
+  category    String
+  price       Float
+  description String?
+  status      String   @default("Available")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  rooms       Room[]
+}
+
+// Rooms
+model Room {
+  id          String    @id @default(cuid())
+  roomNumber  Int       @unique
+  roomTypeId  String
+  roomType    RoomType  @relation(fields: [roomTypeId], references: [id])
+  status      RoomStatus @default(AVAILABLE)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bookings    Booking[]
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+}
+
+// Cottages
+model Cottage {
+  id          String       @id @default(cuid())
+  cottageNumber Int        @unique
+  name        String
+  price       Float
+  description String?
+  status      CottageStatus @default(AVAILABLE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  bookings    Booking[]
+}
+
+enum CottageStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+}
+
+// Guests
+model Guest {
+  id           String    @id @default(cuid())
+  firstName    String
+  lastName     String
+  email        String?
+  phone        String?
+  address      String?
+  idType       String?
+  idNumber     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  bookings     Booking[]
+}
+
+// Bookings
+model Booking {
+  id              String        @id @default(cuid())
+  bookingNumber   String        @unique @default(cuid())
+  guestId         String
+  guest           Guest         @relation(fields: [guestId], references: [id])
+  roomId          String?
+  room            Room?         @relation(fields: [roomId], references: [id])
+  cottageId       String?
+  cottage         Cottage?      @relation(fields: [cottageId], references: [id])
+  checkInDate     DateTime
+  checkOutDate    DateTime
+  adults          Int           @default(1)
+  children        Int           @default(0)
+  totalAmount     Float
+  paymentMethod   String?
+  paymentStatus   PaymentStatus @default(PENDING)
+  bookingStatus   BookingStatus @default(CONFIRMED)
+  specialRequests String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
+// Expense Categories
+model ExpenseCategory {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  expenses    Expense[]
+}
+
+// Expenses
+model Expense {
+  id                String          @id @default(cuid())
+  expenseCategoryId String
+  expenseCategory   ExpenseCategory @relation(fields: [expenseCategoryId], references: [id])
+  amount            Float
+  description       String?
+  date              DateTime
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+// Income Categories
+model IncomeCategory {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  incomes     Income[]
+}
+
+// Income
+model Income {
+  id                String         @id @default(cuid())
+  incomeCategoryId  String
+  incomeCategory    IncomeCategory @relation(fields: [incomeCategoryId], references: [id])
+  amount            Float
+  description       String?
+  date              DateTime
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+// Kitchen Items
+model KitchenItem {
+  id          String   @id @default(cuid())
+  name        String
+  price       Float
+  category    String
+  description String?
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orders      KitchenOrderItem[]
+}
+
+// Kitchen Orders
+model KitchenOrder {
+  id          String             @id @default(cuid())
+  orderNumber String             @unique @default(cuid())
+  roomNumber  Int?
+  cottageNumber Int?
+  guestName   String?
+  status      KitchenOrderStatus @default(PENDING)
+  totalAmount Float
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  items       KitchenOrderItem[]
+}
+
+enum KitchenOrderStatus {
+  PENDING
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+// Kitchen Order Items
+model KitchenOrderItem {
+  id            String       @id @default(cuid())
+  kitchenOrderId String
+  kitchenOrder  KitchenOrder @relation(fields: [kitchenOrderId], references: [id])
+  kitchenItemId String
+  kitchenItem   KitchenItem  @relation(fields: [kitchenItemId], references: [id])
+  quantity      Int
+  price         Float
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
